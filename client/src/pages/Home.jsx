@@ -11,9 +11,7 @@ import { IoMdSend } from "react-icons/io";
 const Home = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
+  const toggleSidebar = () => setIsOpen((prev) => !prev);
 
   const {
     fetchResponse,
@@ -30,7 +28,11 @@ const Home = () => {
     fetchResponse();
   };
 
-  const messagecontainerRef = useRef();
+  const messagecontainerRef = useRef(null);
+
+  // ✅ ALWAYS convert to safe arrays
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const safeChats = Array.isArray(chats) ? chats : [];
 
   useEffect(() => {
     if (messagecontainerRef.current) {
@@ -39,12 +41,14 @@ const Home = () => {
         behavior: "smooth",
       });
     }
-  }, [messages]);
+  }, [safeMessages]);
+
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       <Sidebar isOpen={isOpen} toggleSidebar={toggleSidebar} />
 
       <div className="flex flex-1 flex-col">
+        {/* Mobile Menu */}
         <button
           onClick={toggleSidebar}
           className="md:hidden p-4 bg-gray-800 text-2xl"
@@ -62,26 +66,32 @@ const Home = () => {
               className="flex-1 p-6 max-h-[600px] overflow-y-auto mb-20 md:mb-0 thin-scrollbar"
               ref={messagecontainerRef}
             >
-              {messages && messages.length > 0 ? (
-                messages.map((e, i) => (
+              {safeMessages.length > 0 ? (
+                safeMessages.map((msg, i) => (
                   <div key={i}>
-                    <div className="mb-4 p-4 rounded bg-blue-700 text-white flex gap-1">
+                    {/* User Message */}
+                    <div className="mb-4 p-4 rounded bg-blue-700 text-white flex gap-2">
                       <div className="bg-white p-2 rounded-full text-black text-2xl h-10">
                         <CgProfile />
                       </div>
-                      {e.question}
+                      <p>{msg?.question || ""}</p>
                     </div>
 
-                    <div className="mb-4 p-4 rounded bg-gray-700 text-white flex gap-1">
+                    {/* Bot Message */}
+                    <div className="mb-4 p-4 rounded bg-gray-700 text-white flex gap-2">
                       <div className="bg-white p-2 rounded-full text-black text-2xl h-10">
                         <FaRobot />
                       </div>
-                      <p dangerouslySetInnerHTML={{ __html: e.answer }}></p>
+                      <p
+                        dangerouslySetInnerHTML={{
+                          __html: msg?.answer || "",
+                        }}
+                      />
                     </div>
                   </div>
                 ))
               ) : (
-                <p>No chat yet</p>
+                <p className="text-gray-400">No chat yet</p>
               )}
 
               {newRequestLoading && <LoadingSmall />}
@@ -90,9 +100,8 @@ const Home = () => {
         </div>
       </div>
 
-      {chats && chats.length === 0 ? (
-        ""
-      ) : (
+      {/* Input box only when chats exist */}
+      {safeChats.length > 0 && (
         <div className="fixed bottom-0 right-0 left-auto p-4 bg-gray-900 w-full md:w-[75%]">
           <form
             onSubmit={submitHandler}
@@ -101,12 +110,15 @@ const Home = () => {
             <input
               className="flex-grow p-4 bg-gray-700 rounded-l text-white outline-none"
               type="text"
-              placeholder="Enter a promp here"
+              placeholder="Enter a prompt here"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               required
             />
-            <button className="p-4 bg-gray-700 rounded-r text-2xl text-white">
+            <button
+              type="submit"
+              className="p-4 bg-gray-700 rounded-r text-2xl text-white"
+            >
               <IoMdSend />
             </button>
           </form>
@@ -117,3 +129,4 @@ const Home = () => {
 };
 
 export default Home;
+
